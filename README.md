@@ -101,7 +101,7 @@ python assign_roles.py --email alice.smith@example.com --role Analyst
 ### Generate/Validate RBAC Mapping File
 
 ```bash
-python dump_roles.py --roles Analyst Engineer HR
+python dump_groups_to_json.py --roles Sales HR Engineering --file rbac_config.json
 ```
 
 ---

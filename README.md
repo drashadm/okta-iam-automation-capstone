@@ -4,10 +4,12 @@ Automate identity and access management tasks in Okta using clean, production-gr
 
 This project simulates real-world administrative operations:
 
--  Create and activate Okta users
--  Assign users to multiple groups during onboarding
--  Deactivate and delete users securely
--  Maintain an audit trail in `audit_log.csv`
+- ✅ Create and activate Okta users
+- ✅ Assign users to multiple groups during onboarding
+- ✅ Deactivate and delete users securely
+- ✅ Maintain an audit trail in `audit_log.csv`
+- ✅ Assign users to RBAC roles via JSON-mapped group sets
+- ✅ Validate and export Okta group-to-role mappings
 
 Built as part of a cybersecurity portfolio to demonstrate mastery in API automation, secure coding, and identity lifecycle management.
 
@@ -17,36 +19,35 @@ Built as part of a cybersecurity portfolio to demonstrate mastery in API automat
 
 | Feature                            | Description                                                                 |
 |------------------------------------|-----------------------------------------------------------------------------|
-|  User Provisioning               | Create users via CLI with optional group assignments                        |
-|  User Deletion Workflow          | Deactivate and delete users safely with audit logging                       |
-|  `.env` Configuration            | Secure API token management using `python-dotenv`                           |
-|  Audit Logging                   | All actions are logged with timestamp, status, and reason                   |
-|  Bulk Import Ready               | Modular structure supports future CSV or API-based user import extensions   |
-|  Smoke-Tested & GitHub-Ready     | Real-world test cases included; modular functions are easy to reuse         |
+| User Provisioning               | Create users via CLI with optional group assignments                        |
+| User Deletion Workflow          | Deactivate and delete users safely with audit logging                       |
+| `.env` Configuration            | Secure API token management using `python-dotenv`                           |
+| Audit Logging                   | All actions logged with timestamp, status, and details                      |
+| Bulk Import Ready               | Supports bulk CSV-based user creation with group validation                 |
+| Role Assignment (RBAC)         | Assign roles using JSON-mapped group definitions                            |
+| Smoke-Tested & GitHub-Ready     | Real-world tested with modular, reusable functions                          |
 
 ---
 
 ## Skills & Tools Demonstrated
 
 - **Okta Identity Management (Workforce Identity Cloud)**
-- **Python Automation & CLI**
+- **Python Automation & CLI Tooling**
 - **Secure API Token Handling**
 - **Audit Logging and CSV Parsing**
-- **Clean Code Practices**
-- **IAM Lifecycle Workflows**
+- **Role-Based Access Control (RBAC)**
+- **Clean Code & Modular Architecture**
 
 ---
 
-## Usage
-
-> Requires an [Okta Developer Account](https://developer.okta.com/signup/) and API Token.
+## Setup Instructions
 
 ### 1. Clone and Configure
 
 ```bash
 git clone https://github.com/drashadm/okta-automation-suite.git
 cd okta-automation-suite
-cp .env.example .env  # Then fill in your values
+cp .env.example .env  # Then edit with your Okta values
 ```
 
 ### 2. Fill in `.env`
@@ -59,44 +60,75 @@ OKTA_API_TOKEN=your-super-secret-api-token
 
 ---
 
-## Create a User
+## Demo Commands
+
+### Create a User
 
 ```bash
-python create_user.py --first_name Alice --last_name Smith --email alice.smith@example.com --group_ids grp1 grp2
+python create_user.py --first_name Alice --last_name Smith --email alice.smith@example.com --group_ids groupID1 groupID2
 ```
 
-> Password defaults to `TempPass123!` unless overridden.
+### Bulk Create Users from CSV
 
----
+```bash
+python bulk_create_users.py bulk_users_template.csv
+```
 
-## Delete a User
+### Delete a User
 
 ```bash
 python delete_user.py --email alice.smith@example.com --force
 ```
 
-> Skips confirmation if `--force` is used.
+### List All Groups
+
+```bash
+python list_groups.py
+```
+
+### Create a Group
+
+```bash
+python create_group.py --name "Security Team" --description "SOC Analysts"
+```
+
+### Assign Role via RBAC Mapping
+
+```bash
+python assign_roles.py --email alice.smith@example.com --role Analyst
+```
+
+### Generate/Validate RBAC Mapping File
+
+```bash
+python dump_roles.py --roles Analyst Engineer HR
+```
 
 ---
 
-## File Structure
+## Project Structure
 
 ```
 okta-automation-suite/
-├── create_user.py         # Create & assign users to groups
-├── delete_user.py         # Deactivate + delete users by email
-├── utils.py               # Shared utilities + logging
-├── audit_log.csv          # Action logs (ignored in Git)
-├── .env.example           # Sample config
-├── requirements.txt       # Cleaned dependencies
-└── README.md              # You’re reading it!
+├── create_user.py           # Create & assign users to groups
+├── bulk_create_users.py     # Bulk user creation via CSV
+├── delete_user.py           # Deactivate + delete users by email
+├── assign_roles.py          # RBAC assignment via JSON
+├── dump_roles.py            # Generate RBAC mapping from existing groups
+├── create_group.py          # Create new Okta groups
+├── list_groups.py           # List all existing groups
+├── utils.py                 # Shared utilities and logging
+├── rbac_config.json         # Role-to-group mappings
+├── bulk_users_template.csv  # Sample CSV for bulk user creation
+├── audit_log.csv            # Action logs (ignored in Git)
+├── .env.example             # Sample config file
+├── requirements.txt         # Minimal dependency list
+└── README.md                # This file
 ```
 
 ---
 
 ## Requirements
-
-Install dependencies:
 
 ```bash
 pip install -r requirements.txt
@@ -111,12 +143,10 @@ Required packages:
 
 ## Sample Audit Log
 
-`audit_log.csv` logs all actions automatically:
-
 ```
 Timestamp,Action,Email,Status,Details
 2025-06-25T04:13:09Z,CREATE_USER,alice.smith@example.com,SUCCESS,User ID: 00uabc123xyz
-2025-06-25T04:15:22Z,DELETE_USER,alice.smith@example.com,SUCCESS,
+2025-06-25T04:15:22Z,DELETE_USER,alice.smith@example.com,SUCCESS,User deleted
 ```
 
 ---
@@ -125,16 +155,17 @@ Timestamp,Action,Email,Status,Details
 
 Already complete:
 
-- User lifecycle automation  
-- Secure API key management  
-- Audit trail generation
+- ✅ User lifecycle automation  
+- ✅ Secure API key management  
+- ✅ Audit trail generation  
+- ✅ Role-based access mapping  
+- ✅ Bulk operations
 
-Bonus ideas (future enhancements):
+Future ideas:
 
--  Bulk CSV user import
--  Okta group lookup utility
--  Dashboard-ready JSON export
--  MFA enforcement scanner
+- MFA enforcement scanner  
+- JSON export for dashboards  
+- Integration with Slack for notifications
 
 ---
 
@@ -148,5 +179,5 @@ Cybersecurity | IAM Automation | Python Developer
 
 ## DISCLAIMER
 
-### FOR EDUCATIONAL AND DEMONSTRATION PURPOSES ONLY  
-Always follow your organization’s IAM and security policies when automating user management.
+**FOR EDUCATIONAL AND DEMONSTRATION PURPOSES ONLY**  
+Always follow your organization’s IAM and security policies when automating identity management.

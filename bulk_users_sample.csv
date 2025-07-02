@@ -1,0 +1,4 @@
+first_name,last_name,email,group_ids
+Alice,Johnson,alice.johnson@example.com,group1 group2
+Bob,Lee,bob.lee@example.com,group3
+Charlie,Brown,charlie.brown@example.com,

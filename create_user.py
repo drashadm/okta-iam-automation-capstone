@@ -4,7 +4,7 @@ import os
 import sys
 import requests
 from dotenv import load_dotenv
-from utils import log_action
+from utils import log_action, find_user_by_email
 
 # === Load Okta Credentials === #
 def load_okta_credentials():

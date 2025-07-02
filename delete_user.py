@@ -1,94 +1,85 @@
 #!/usr/bin/env python3
 
-import os
 import sys
+import os
 import requests
 from dotenv import load_dotenv
-from utils import log_action
+from utils import log_action, find_user_by_email
+from typing import Tuple, Dict
+
 
 # === Load Okta Credentials === #
-def load_okta_credentials():
+def load_okta_credentials() -> Tuple[str, str]:
     load_dotenv()
     domain = os.getenv("OKTA_DOMAIN")
     token = os.getenv("OKTA_API_TOKEN")
+
     if not domain or not token:
         print(" Missing OKTA_DOMAIN or OKTA_API_TOKEN in .env file.")
         sys.exit(1)
+
     return domain.rstrip("/"), token
 
-# === Get User Info === #
-def find_user_by_email(email, headers, okta_domain):
-    search_url = f"{okta_domain}/api/v1/users?q={email}"
-    response = requests.get(search_url, headers=headers)
 
-    if response.status_code != 200:
-        print(f" Error searching user: {response.status_code} - {response.text}")
-        log_action("DELETE_USER", email, "FAILED", f"Search error: {response.text}")
-        return None
-
-    users = response.json()
-    if not users:
-        print(f" User not found: {email}")
-        log_action("DELETE_USER", email, "FAILED", "User not found")
-        return None
-
-    return users[0]  # Assume the first match is correct
-
-# === Deactivate User === #
-def deactivate_user(user_id, email, okta_domain, headers):
-    url = f"{okta_domain}/api/v1/users/{user_id}/lifecycle/deactivate"
-    response = requests.post(url, headers=headers)
-    if response.status_code == 200:
-        return True
-    else:
-        log_action("DELETE_USER", email, "FAILED", f"Deactivate error: {response.text}")
-        return False
-
-# === Delete User === #
-def delete_user(user_id, email, okta_domain, headers):
-    url = f"{okta_domain}/api/v1/users/{user_id}"
-    response = requests.delete(url, headers=headers)
-    if response.status_code == 204:
-        log_action("DELETE_USER", email, "SUCCESS", f"User ID: {user_id}")
-        return True
-    else:
-        log_action("DELETE_USER", email, "FAILED", f"Delete error: {response.text}")
-        return False
-
-# === Main Flow === #
-def delete_user_by_email(email, force=False):
-    okta_domain, token = load_okta_credentials()
-    headers = {
+# === Build Headers === #
+def get_headers(token: str) -> Dict[str, str]:
+    return {
         "Authorization": f"SSWS {token}",
         "Accept": "application/json"
     }
 
+
+# === Deactivate User === #
+def deactivate_user(user_id: str, okta_domain: str, headers: Dict[str, str]) -> bool:
+    url = f"{okta_domain}/api/v1/users/{user_id}/lifecycle/deactivate"
+    response = requests.post(url, headers=headers)
+    return response.status_code == 200
+
+
+# === Delete User === #
+def delete_user(user_id: str, okta_domain: str, headers: Dict[str, str]) -> bool:
+    url = f"{okta_domain}/api/v1/users/{user_id}"
+    response = requests.delete(url, headers=headers)
+    return response.status_code == 204
+
+
+# === Main Flow === #
+def delete_user_by_email(email: str, force: bool = False) -> None:
+    okta_domain, token = load_okta_credentials()
+    headers = get_headers(token)
+
     user = find_user_by_email(email, headers, okta_domain)
     if not user:
+        log_action("DELETE_USER", email, "FAILED", "User not found")
         return
 
-    user_id = user["id"]
+    user_id = user.get("id", "")
     status = user.get("status", "UNKNOWN")
-    print(f" Found user: {email} | Status: {status} | ID: {user_id}")
+    print(f"Found user: {email} | Status: {status} | ID: {user_id}")
 
     if not force:
         confirm = input(f"[?] Are you sure you want to delete '{email}'? (yes/no): ").strip().lower()
         if confirm != "yes":
+            print(" Deletion cancelled by user.")
             log_action("DELETE_USER", email, "CANCELLED", "User opted out")
             return
 
     if status not in ["DEPROVISIONED", "SUSPENDED"]:
-        print(" Deactivating user first...")
-        if not deactivate_user(user_id, email, okta_domain, headers):
+        print(" User must be deactivated before deletion...")
+        if not deactivate_user(user_id, okta_domain, headers):
             print(" Failed to deactivate user. Aborting.")
+            log_action("DELETE_USER", email, "FAILED", "Deactivation failed")
             return
         print(" User deactivated.")
 
     print(" Deleting user...")
-    if delete_user(user_id, email, okta_domain, headers):
+    if delete_user(user_id, okta_domain, headers):
         print(f" Successfully deleted user: {email}")
+        log_action("DELETE_USER", email, "SUCCESS", "User deleted")
     else:
         print(f" Failed to delete user: {email}")
+        log_action("DELETE_USER", email, "FAILED", "Delete API call failed")
+
 
 # === CLI Interface === #
 if __name__ == "__main__":
